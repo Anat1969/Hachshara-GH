@@ -286,6 +286,22 @@ try {
     ok(await page.locator('#s-6.on').count() === 1, 'link with ?s= opens at that stage')
     const top6 = await page.locator('#s-6').evaluate((el) => el.getBoundingClientRect().top)
     ok(top6 > 0 && top6 < 400, `link with ?s= scrolls to the stage (top ${Math.round(top6)})`)
+    // Second example: architecture
+    await page.goto(BASE + '/example')
+    await page.getByTestId('ex-binui').click()
+    await page.waitForFunction(() => location.search.includes('e=binui'))
+    await page.locator('h1', { hasText: 'תוכנית בינוי' }).waitFor()
+    ok((await page.locator('.thread-v').first().innerText()) === '45', 'architecture example has its own metric thread')
+    await page.getByTestId('seq-5').click()
+    await page.waitForFunction(() => location.search.includes('e=binui') && location.search.includes('s=5'))
+    await page.locator('#s-5 .phone.desktop').waitFor()
+    ok(true, 'architecture prototype shows a desktop screen and keeps the example in the URL')
+    await page.goto(BASE + '/example?e=binui&s=3')
+    await page.waitForTimeout(1200)
+    ok((await page.locator('#s-3 .opt-card strong').innerText()) === 'AI', 'architecture example chose the AI layer')
+    await page.getByTestId('ex-library').click()
+    await page.locator('h1', { hasText: 'ספרייה' }).waitFor()
+    ok(!page.url().includes('e=binui'), 'switch back to the library example')
     await page.goto(BASE + '/stage/2')
     await page.getByTestId('stage-example').click()
     await page.waitForURL('**/example?s=2')
@@ -452,7 +468,7 @@ try {
   console.log('Mobile')
   for (const role of [null, 'participant', 'mentor']) {
     const { page, context } = await newPage(browser, { role, viewport: { width: 375, height: 800 } })
-    const paths = role === 'mentor' ? ['/', '/mentor', '/mentor/group', '/stage/1'] : role ? ['/', '/anchor', '/stage/0', '/stage/3'] : ['/', '/stage/3', '/example', '/example?s=5']
+    const paths = role === 'mentor' ? ['/', '/mentor', '/mentor/group', '/stage/1'] : role ? ['/', '/anchor', '/stage/0', '/stage/3'] : ['/', '/stage/3', '/example', '/example?s=5', '/example?e=binui&s=5', '/example?e=binui&s=1']
     for (const p of paths) {
       await page.goto(BASE + p)
       await page.waitForTimeout(900)
