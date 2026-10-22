@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useApp, personalLink } from '../store.jsx'
-import { DEV_CHAT_URL } from '../supabase.js'
+import { DEV_CHAT_URL, RESEARCH_URL } from '../supabase.js'
 import AnatLogo from './AnatLogo.jsx'
 
 async function copy(text) {
@@ -83,9 +83,9 @@ export default function TopBar() {
         <nav className="navlinks" aria-label="ניווט ראשי">{navItems}</nav>
         <button
           className={`owner ${open ? 'on' : ''}`} onClick={() => setOpen((o) => !o)}
-          aria-expanded={open} aria-controls="owner-panel" aria-label="תפריט ענת: קישורים והתקנה" data-testid="menu"
+          aria-expanded={open} aria-controls="owner-panel" aria-label="אד׳ ענת שטיבלמן: קישורים, שיחת הפיתוח והתקנה" data-testid="menu"
         >
-          <AnatLogo size={30} />
+          <AnatLogo open={open} />
           {installEvt && <span className="owner-dot" aria-hidden="true" />}
         </button>
       </div>
@@ -107,6 +107,7 @@ export default function TopBar() {
                     {copied === 'mine' ? 'הקישור האישי הועתק' : 'הקישור האישי שלי'}
                   </button>
                 ),
+                RESEARCH_URL && <a key="research" className="btn" href={RESEARCH_URL} target="_blank" rel="noreferrer" data-testid="research">פרויקט המחקר</a>,
                 <a key="chat" className="btn" href={DEV_CHAT_URL} target="_blank" rel="noreferrer" data-testid="dev-chat">שיחת הפיתוח</a>,
                 installEvt && <button key="install" className="btn ink" onClick={install} data-testid="install">התקנת האפליקציה</button>,
                 identity && (

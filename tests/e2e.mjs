@@ -210,6 +210,10 @@ try {
     await page.waitForTimeout(1500)
     await page.screenshot({ path: 'tests/shots/landing.png', fullPage: true })
     // Owner panel under Anat's logo
+    ok(await page.locator('.topbar-inner [data-testid="copy-link"], .topbar-inner [data-testid="dev-chat"]').count() === 0, 'no utility buttons in the main bar')
+    ok(await page.locator('.topbar-inner .anat-mark[aria-label="אד׳ ענת שטיבלמן"]').count() === 1, "Anat's mark sits in the main bar")
+    const markBox = await page.locator('.owner').boundingBox()
+    ok(markBox.x < 400, `mark on the left side of the bar (x ${Math.round(markBox.x)})`)
     await openMenu(page)
     await page.getByTestId('copy-link').click()
     ok((await page.evaluate(() => navigator.clipboard.readText())) === BASE + '/', 'copy link copies current URL')

@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react'
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
+import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from 'framer-motion'
 
 /**
- * Anat's signature mark: the word "ענת" drawn as a line, filled with a moving
- * light gradient, sitting on three stacked planes that tilt toward the pointer.
- * The gradient phase follows the hour of the day, so the mark is never the same twice.
+ * Anat's mark, as she signs it: "אד׳ ענת שטיבלמן | &".
+ * On load the name is written from right to left behind a moving pen line, the divider rises,
+ * and the ampersand turns into place. At rest a light sweeps the name, the mark tilts toward
+ * the pointer, and the ampersand turns a quarter when the panel under it is open.
  */
-export default function AnatLogo({ size = 34 }) {
-  const [hourPhase] = useState(() => (new Date().getHours() / 24) * 360)
+export default function AnatLogo({ open = false }) {
+  const reduce = useReducedMotion()
+  const [entered, setEntered] = useState(false)
+  useEffect(() => { const id = setTimeout(() => setEntered(true), 1800); return () => clearTimeout(id) }, [])
   const mx = useMotionValue(0)
   const my = useMotionValue(0)
-  const rotX = useSpring(useTransform(my, [-1, 1], [14, -14]), { stiffness: 140, damping: 14 })
-  const rotY = useSpring(useTransform(mx, [-1, 1], [-18, 18]), { stiffness: 140, damping: 14 })
-  const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  const rotX = useSpring(useTransform(my, [-1, 1], [10, -10]), { stiffness: 140, damping: 16 })
+  const rotY = useSpring(useTransform(mx, [-1, 1], [-12, 12]), { stiffness: 140, damping: 16 })
 
   useEffect(() => {
     if (reduce) return
@@ -24,46 +26,33 @@ export default function AnatLogo({ size = 34 }) {
     return () => window.removeEventListener('pointermove', onMove)
   }, [mx, my, reduce])
 
+  const t = (delay, duration = 0.6) => (reduce ? { duration: 0 } : { delay, duration, ease: [0.2, 0.7, 0.2, 1] })
+
   return (
-    <motion.span
-      aria-label="ענת" role="img" className="anat-logo"
-      style={{ width: size * 1.9, height: size, rotateX: rotX, rotateY: rotY }}
-      initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
-    >
-      {[0, 1, 2].map((i) => (
-        <motion.span
-          key={i} aria-hidden="true" className="anat-plane"
-          style={{
-            borderColor: `hsl(0 0% ${70 - i * 18}% / ${0.55 - i * 0.15})`,
-            background: `linear-gradient(${135 + i * 20}deg, hsl(0 0% ${22 - i * 5}% / 0.9), hsl(0 0% ${8 - i * 2}% / 0.6))`,
-            transform: `translateZ(${-i * 10}px) translate(${i * 3}px, ${i * 3}px)`,
-            boxShadow: i === 0 ? '0 8px 24px -8px hsl(0 0% 0% / 0.8), inset 0 1px 0 hsl(0 0% 100% / 0.12)' : 'none',
-          }}
-          animate={reduce ? undefined : { x: [0, i * 1.5, 0], y: [0, -i * 1.5, 0] }}
-          transition={{ duration: 6 + i, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      ))}
-      <svg viewBox="0 0 190 100" className="anat-svg">
-        <defs>
-          <linearGradient id="anat-sheen" x1="0" y1="0" x2="1" y2="1" gradientTransform={`rotate(${hourPhase} .5 .5)`}>
-            <stop offset="0%" stopColor="#f5f5f4" />
-            <stop offset="45%" stopColor="#a8a29e" />
-            <stop offset="100%" stopColor="#fafaf9" />
-            {!reduce && (
-              <animateTransform attributeName="gradientTransform" type="rotate" from={`${hourPhase} .5 .5`} to={`${hourPhase + 360} .5 .5`} dur="14s" repeatCount="indefinite" />
-            )}
-          </linearGradient>
-        </defs>
-        <motion.text
-          x="95" y="70" textAnchor="middle" fontFamily="'IBM Plex Sans Hebrew', sans-serif" fontWeight={200} fontSize="64"
-          fill="url(#anat-sheen)" stroke="#e7e5e4" strokeWidth={0.8} strokeDasharray="420"
-          initial={{ strokeDashoffset: 420, fillOpacity: 0 }} animate={{ strokeDashoffset: 0, fillOpacity: 1 }}
-          transition={{ strokeDashoffset: { duration: 1.6, ease: 'easeInOut' }, fillOpacity: { delay: 1.1, duration: 0.9 } }}
-        >
-          ענת
-        </motion.text>
-      </svg>
+    <motion.span className={`anat-mark ${open ? 'open' : ''}`} role="img" aria-label="אד׳ ענת שטיבלמן"
+      style={{ rotateX: rotX, rotateY: rotY }}>
+      <motion.span className="am-title" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={t(0.1, 0.5)}>
+        אד׳
+      </motion.span>
+      <span className="am-name-wrap">
+        <motion.span className="am-name"
+          initial={{ clipPath: 'inset(0 0 0 100%)' }} animate={{ clipPath: 'inset(0 0 0 0%)' }} transition={t(0.3, 1.1)}>
+          ענת שטיבלמן
+        </motion.span>
+        {!reduce && (
+          <motion.span className="am-pen" aria-hidden="true"
+            initial={{ right: '0%', opacity: 1 }} animate={{ right: '100%', opacity: [1, 1, 0] }}
+            transition={{ delay: 0.3, duration: 1.1, ease: [0.2, 0.7, 0.2, 1] }} />
+        )}
+      </span>
+      <motion.span className="am-bar" aria-hidden="true" initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={t(1.25, 0.45)} />
+      <motion.span className="am-amp" aria-hidden="true"
+        initial={{ rotate: -200, scale: 0.2, opacity: 0 }}
+        animate={{ rotate: open ? 90 : 0, scale: 1, opacity: 1 }}
+        whileHover={reduce ? undefined : { rotate: open ? 100 : 14, scale: 1.15 }}
+        transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 180, damping: 14, delay: entered ? 0 : 1.45 }}>
+        &amp;
+      </motion.span>
     </motion.span>
   )
 }
