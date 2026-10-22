@@ -558,3 +558,24 @@ input:disabled, textarea:disabled { background: #f1f0ed; color: var(--ink-2); }
   .phone-steps { width: 100%; }
   .ex-delivs { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* example switcher */
+.ex-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; max-width: 900px; }
+.ex-tab { display: grid; gap: 6px; text-align: start; padding: 16px 18px; border: 1px solid var(--line-2); background: rgba(255,255,255,0.6); cursor: pointer; transition: background 0.35s, color 0.35s, box-shadow 0.35s, transform 0.25s; }
+.ex-tab:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
+.ex-tab .mono { color: var(--accent); }
+.ex-tab-blurb { font-size: 0.95rem; color: var(--ink-2); }
+.ex-tab-layer { font-size: 0.72rem; color: var(--muted); }
+.ex-tab.on { background: linear-gradient(160deg, #26292d, #141517); color: #f1efeb; border-color: transparent; box-shadow: var(--shadow-3); }
+.ex-tab.on .ex-tab-blurb { color: rgba(241,239,235,0.85); }
+.ex-tab.on .ex-tab-layer { color: var(--accent-2); }
+.phone.desktop { width: 360px; height: 250px; padding: 12px 12px 22px; }
+.phone.desktop::after { content: ''; position: absolute; bottom: 6px; left: 50%; translate: -50% 0; width: 40px; height: 4px; background: rgba(255,255,255,0.18); }
+.phone.desktop .phone-screen { inset: 12px 12px 22px; padding: 14px; gap: 8px; }
+.phone.desktop .phone-screen strong { font-size: 1.1rem; }
+.phone.desktop .phone-field { padding: 7px 10px; font-size: 0.82rem; }
+.phone.desktop .phone-cta { margin-top: 2px; padding: 7px; }
+@media (max-width: 640px) {
+  .ex-switch { grid-template-columns: minmax(0, 1fr); }
+  .phone.desktop { width: 100%; max-width: 330px; }
+}

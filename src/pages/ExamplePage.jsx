@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useApp } from '../store.jsx'
 import { Tower, StageTrack } from '../components/viz.jsx'
 import { Badge, Loading } from '../components/States.jsx'
-import { EXAMPLE, QUESTIONS, STEPS } from '../data/example.js'
+import { EXAMPLES, QUESTIONS } from '../data/example.js'
 import { stageNumber } from '../lib.js'
 
 const EASE = [0.2, 0.7, 0.2, 1]
@@ -13,6 +13,9 @@ const reveal = { initial: { opacity: 0, y: 24 }, whileInView: { opacity: 1, y: 0
 export default function ExamplePage() {
   const { course } = useApp()
   const [params, setParams] = useSearchParams()
+  const exId = EXAMPLES[params.get('e')] ? params.get('e') : 'library'
+  const ex = EXAMPLES[exId]
+  const STEPS = ex.steps
   const initial = Math.min(7, Math.max(0, Number(params.get('s')) || 0))
   const [active, setActive] = useState(initial)
   const refs = useRef([])
@@ -40,11 +43,18 @@ export default function ExamplePage() {
     }, { rootMargin: '-35% 0px -55% 0px' })
     refs.current.forEach((el) => el && io.observe(el))
     return () => io.disconnect()
-  }, [course])
+  }, [course, exId])
 
   useEffect(() => {
-    if (String(active) !== params.get('s')) setParams({ s: String(active) }, { replace: true })
+    if (String(active) !== params.get('s')) setParams(exId === 'library' ? { s: String(active) } : { e: exId, s: String(active) }, { replace: true })
   }, [active]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const switchTo = (id) => {
+    if (id === exId) return
+    setParams(id === 'library' ? { s: '0' } : { e: id, s: '0' }, { replace: false })
+    setActive(0)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const go = (id) => {
     setActive(id)
@@ -60,11 +70,22 @@ export default function ExamplePage() {
     <div className="example">
       <section className="ex-hero">
         <motion.span className="eyebrow" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>דוגמה מקצה לקצה · ארגון בדוי להמחשה</motion.span>
-        <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>{EXAMPLE.title}</motion.h1>
+        <div className="ex-switch" role="tablist" aria-label="בחירת דוגמה">
+          {Object.values(EXAMPLES).map((x, i) => (
+            <button key={x.id} role="tab" aria-selected={x.id === exId} className={`ex-tab ${x.id === exId ? 'on' : ''}`} onClick={() => switchTo(x.id)} data-testid={`ex-${x.id}`}>
+              <span className="mono">{String(i + 1).padStart(2, '0')} · {x.short}</span>
+              <span className="ex-tab-blurb">{x.blurb}</span>
+              <span className="ex-tab-layer mono">הפתרון: {x.resultLayer}</span>
+            </button>
+          ))}
+        </div>
+        <AnimatePresence mode="wait">
+          <motion.h1 key={exId} initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>{ex.title}</motion.h1>
+        </AnimatePresence>
         <motion.p className="lead" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.12 }}>
           מקרה אחד, משיחה ראשונה ועד מסירה לארגון. בכל קומה: השאלה של השלב, סדר הפעולות, התוצר, תגובת המנטור, ומה עובר הלאה.
         </motion.p>
-        <MetricThread />
+        <MetricThread key={exId} metric={ex.metric} />
         <ol className="ex-sequence" aria-label="סדר השאלות">
           {QUESTIONS.map((q, i) => (
             <motion.li key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.05 }}>
@@ -86,7 +107,7 @@ export default function ExamplePage() {
         <aside className="ex-aside">
           <Tower stages={course.stages} current={active} compact onPick={go} caption="הבניין גדל בזמן הקריאה. לחיצה על קומה קופצת אליה." />
         </aside>
-        <div className="ex-main">
+        <div className="ex-main" key={exId}>
           {STEPS.map((st) => {
             const stage = stageOf(st.id)
             return (
@@ -162,8 +183,8 @@ function DeliverableSample({ d }) {
 }
 
 /* The one number followed through the whole track */
-function MetricThread() {
-  const { before, target, after, label } = EXAMPLE.metric
+function MetricThread({ metric }) {
+  const { before, target, after, label } = metric
   const rows = [['היום, שלב 2', before, 'base'], ['יעד, שלב 2', target, 'target'], ['אחרי הפיילוט, שלב 6', after, 'after']]
   return (
     <figure className="thread">
@@ -184,20 +205,19 @@ function MetricThread() {
 
 function StageViz({ st }) {
   switch (st.viz) {
-    case 'pains': return <PainsViz />
-    case 'flow': return <FlowViz flow={st.flow} />
+    case 'pains': return <PainsViz pains={st.pains} />
+    case 'flow': return <FlowViz flow={st.flow} unit={st.flowUnit} caption={st.flowCaption} />
     case 'anatomy': return <AnatomyViz parts={st.anatomy} />
     case 'pyramid': return <OptionsViz options={st.options} chosen={st.chosen} />
     case 'spec': return <SpecViz spec={st.spec} />
-    case 'phone': return <PhoneViz screens={st.screens} />
+    case 'phone': return <PhoneViz screens={st.screens} device={st.device} />
     case 'pilot': return <PilotViz rows={st.pilot} />
     case 'handover': return <HandoverViz items={st.checklist} />
     default: return null
   }
 }
 
-function PainsViz() {
-  const pains = ['הרשמה לחוגי קיץ בטלפון ובאקסל', 'בקשות לשמירת ספרים בשלושה ערוצים', 'צילומי אירועים בלי חיפוש']
+function PainsViz({ pains }) {
   return (
     <div className="pains-viz">
       <span className="eyebrow">שלושה תהליכים, אחד ייבחר</span>
@@ -212,19 +232,19 @@ function PainsViz() {
   )
 }
 
-function FlowViz({ flow }) {
+function FlowViz({ flow, unit, caption }) {
   const total = flow.reduce((a, f) => a + f.m, 0)
   const max = Math.max(...flow.map((f) => f.m))
   return (
     <figure className="flow">
-      <figcaption className="eyebrow">מפת התהליך · {total} דקות עבודה להרשמה</figcaption>
+      <figcaption className="eyebrow">מפת התהליך · {total} {caption}</figcaption>
       <ol className="flow-steps">
         {flow.map((f, i) => (
           <motion.li key={i} className={f.stuck ? 'stuck' : ''} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
             <span className="mono">{String(i + 1).padStart(2, '0')}</span>
             <strong>{f.t}</strong>
             <span className="flow-bar"><motion.i initial={{ width: 0 }} whileInView={{ width: `${(f.m / max) * 100}%` }} viewport={{ once: true }} transition={{ delay: 0.3 + i * 0.1, duration: 0.6 }} /></span>
-            <span className="mono">{f.m} דק׳</span>
+            <span className="mono">{f.m === 1 && unit === 'ימים' ? 'יום' : `${f.m} ${unit}`}</span>
             {f.stuck && <em>{f.stuck}</em>}
           </motion.li>
         ))}
@@ -296,7 +316,7 @@ function SpecViz({ spec }) {
   )
 }
 
-function PhoneViz({ screens }) {
+function PhoneViz({ screens, device = 'phone' }) {
   const [i, setI] = useState(0)
   useEffect(() => {
     const t = setInterval(() => setI((x) => (x + 1) % screens.length), 2400)
@@ -304,9 +324,9 @@ function PhoneViz({ screens }) {
   }, [screens.length])
   return (
     <figure className="phone-wrap">
-      <figcaption className="eyebrow">המסלול המרכזי בשלושה מסכים</figcaption>
+      <figcaption className="eyebrow">המסלול המרכזי בשלושה מסכים{device === 'desktop' ? ', במחשב' : ''}</figcaption>
       <div className="phone-row">
-        <div className="phone" aria-label="הדמיית טלפון">
+        <div className={`phone ${device}`} aria-label={device === 'desktop' ? 'הדמיית מסך מחשב' : 'הדמיית טלפון'}>
           <AnimatePresence mode="wait">
             <motion.div key={i} className="phone-screen" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.35 }}>
               <span className="mono">{String(i + 1).padStart(2, '0')} / 03</span>
