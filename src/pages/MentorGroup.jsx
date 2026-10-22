@@ -4,6 +4,7 @@ import { useApp } from '../store.jsx'
 import { buildRows } from '../mentor.js'
 import { Loading, Empty, Badge } from '../components/States.jsx'
 import AdvanceButton from '../components/AdvanceButton.jsx'
+import { StageTrack } from '../components/viz.jsx'
 import { stageNumber } from '../lib.js'
 
 const FILTERS = [
@@ -48,8 +49,8 @@ export default function MentorGroup() {
             <tbody>
               {shown.map((r, i) => (
                 <motion.tr key={r.e.id} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}>
-                  <td data-label="משתתף"><strong>{r.name}</strong><span className="mono muted small">{r.email}</span></td>
-                  <td data-label="שלב"><span className="mono">{stageNumber(r.e.current_stage)}</span> {stageTitle(r.e.current_stage)}</td>
+                  <td data-label="משתתף"><strong>{r.name}</strong></td>
+                  <td data-label="שלב"><StageTrack current={r.e.current_stage} /><span className="mono">{stageNumber(r.e.current_stage)}</span> {stageTitle(r.e.current_stage)}</td>
                   <td data-label="ארגון עוגן">{r.anchor ? <>{r.anchor.org_name} <Badge status={r.anchor.status} /></> : <Badge status="none" />}</td>
                   <td data-label="הוגשו" className="mono">{r.handedIn}</td>
                   <td data-label="ממתינים" className="mono">{r.pending}</td>

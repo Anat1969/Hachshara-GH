@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useApp } from '../store.jsx'
-import { supabase, must } from '../supabase.js'
+import { rpc } from '../supabase.js'
 import { Badge, Loading, ErrorState, Empty } from '../components/States.jsx'
-import { useSignIn, useNotice } from '../components/SignIn.jsx'
+import { useNotice } from '../components/Notice.jsx'
+import { Pyramid, StageTrack } from '../components/viz.jsx'
 import { dueDate, fmtDate, stageNumber } from '../lib.js'
 
 export default function StagePage() {
@@ -12,17 +13,16 @@ export default function StagePage() {
   const stageId = Number(id)
   const [params, setParams] = useSearchParams()
   const openId = params.get('d')
-  const { course, courseError, reloadCourse, session, me, data, status } = useApp()
-  const signIn = useSignIn()
+  const { course, courseError, reloadCourse, identity, data, status } = useApp()
   const [editing, setEditing] = useState(false)
 
   if (courseError) return <ErrorState onRetry={reloadCourse} />
-  if (!course || (session && status === 'loading')) return <Loading />
+  if (!course || (identity && status !== 'ready')) return <Loading />
   const stage = course.stages.find((s) => s.id === stageId)
-  if (!stage) return <Empty title="השלב לא נמצא" text="אפשר לחזור לדף הבית ולבחור שלב מהמפה."><Link className="btn line" to="/">לדף הבית</Link></Empty>
+  if (!stage) return <Empty title="השלב לא נמצא" text="אפשר לחזור לדף הבית ולבחור שלב מהמפה."><Link className="btn" to="/">לדף הבית</Link></Empty>
 
   const ds = course.deliverables.filter((d) => d.stage_id === stageId)
-  const isMentor = me?.role === 'mentor'
+  const isMentor = identity?.role === 'mentor'
   const enrollment = !isMentor ? data?.enrollment : null
   const canWork = enrollment && stageId <= enrollment.current_stage
   const due = enrollment ? dueDate(enrollment.cohort?.starts_on, stage.due_week) : null
@@ -49,17 +49,26 @@ export default function StagePage() {
         {enrollment && stageId > enrollment.current_stage && (
           <p className="notice-strip">השלב הזה ייפתח אחרי שהמנטור יאשר את השלבים הקודמים.</p>
         )}
-        {!session && (
-          <div className="hero-cta"><button className="btn solid" onClick={signIn}>כניסה כדי להגיש תוצרים</button></div>
-        )}
+        {enrollment && <StageTrack current={enrollment.current_stage} />}
+        {!identity && <p className="notice-strip">כדי להגיש תוצרים, נכנסים מדף הבית עם השם בלבד.</p>}
       </section>
+
+      {stage.id === 3 && (
+        <section className="section">
+          <header className="section-head">
+            <span className="eyebrow">כלי חשיבה</span>
+            <h2>מהפתרון הפשוט אל המורכב</h2>
+          </header>
+          <Pyramid />
+        </section>
+      )}
 
       <section className="section">
         <header className="section-head">
           <span className="eyebrow">תוצרים</span>
           <h2>מה מגישים בשלב הזה</h2>
         </header>
-        <ul className="deliverables">
+        <ul className="deliverables rail">
           {stageId === 0 && (
             <li className="deliv">
               <div className="deliv-head static">
@@ -67,7 +76,7 @@ export default function StagePage() {
                 <div><strong>בחירת ארגון עוגן</strong><p>שם הארגון, תחום, איש קשר ושלושה תהליכים כואבים.</p></div>
                 {enrollment && <Badge status={data.anchor?.status || 'none'} />}
               </div>
-              {enrollment && <div className="deliv-foot"><Link className="btn line" to="/anchor" data-testid="to-anchor">לטופס הארגון</Link></div>}
+              {enrollment && <div className="deliv-foot"><Link className="btn" to="/anchor" data-testid="to-anchor">לטופס הארגון</Link></div>}
             </li>
           )}
           {ds.map((d, i) => {
@@ -90,7 +99,7 @@ export default function StagePage() {
                   )}
                   {open && !editing && !enrollment && (
                     <motion.div className="deliv-body" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
-                      <p className="muted pad">{isMentor ? 'הגשות המשתתפים מופיעות בתור הבדיקה.' : 'כדי להגיש תוצר צריך להיכנס למערכת.'}</p>
+                      <p className="muted pad">{isMentor ? 'הגשות המשתתפים מופיעות בתור הבדיקה.' : 'כדי להגיש תוצר נכנסים מדף הבית עם השם בלבד.'}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -102,14 +111,14 @@ export default function StagePage() {
       </section>
 
       <nav className="pager" aria-label="מעבר בין שלבים">
-        {prev ? <Link className="btn line" to={`/stage/${prev.id}`} data-testid="prev-stage">לשלב הקודם: {prev.title}</Link> : <span />}
-        {next ? <Link className="btn line" to={`/stage/${next.id}`} data-testid="next-stage">לשלב הבא: {next.title}</Link> : <span />}
+        {prev ? <Link className="btn" to={`/stage/${prev.id}`} data-testid="prev-stage">לשלב הקודם: {prev.title}</Link> : <span />}
+        {next ? <Link className="btn" to={`/stage/${next.id}`} data-testid="next-stage">לשלב הבא: {next.title}</Link> : <span />}
       </nav>
 
       {isMentor && (
         <motion.div className="editbar" initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
           <span className="mono">עריכת תוכן</span>
-          <button className={`btn ${editing ? 'accent' : 'solid'}`} onClick={() => setEditing((e) => !e)} data-testid="edit-toggle">
+          <button className={`btn ${editing ? 'gold' : 'ink'}`} onClick={() => setEditing((e) => !e)} data-testid="edit-toggle">
             {editing ? 'סיום עריכה' : 'עריכת השלב'}
           </button>
         </motion.div>
@@ -119,7 +128,7 @@ export default function StagePage() {
 }
 
 function SubmissionEditor({ deliverable, sub, canWork }) {
-  const { data, reload } = useApp()
+  const { data, reload, identity } = useApp()
   const notify = useNotice()
   const [content, setContent] = useState(sub?.content || '')
   const [link, setLink] = useState(sub?.link || '')
@@ -138,13 +147,9 @@ function SubmissionEditor({ deliverable, sub, canWork }) {
     }
     setBusy(true)
     try {
-      await supabase.from('cgh_submissions').upsert({
-        enrollment_id: data.enrollment.id,
-        deliverable_id: deliverable.id,
-        content,
-        link: link.trim() || null,
-        status: nextStatus,
-      }, { onConflict: 'enrollment_id,deliverable_id' }).then(must)
+      await rpc('cgh_save_submission', {
+        p_key: identity.key, p_deliverable: deliverable.id, p_content: content, p_link: link.trim(), p_status: nextStatus,
+      })
       setSaved(nextStatus === 'submitted' ? 'הוגש לבדיקה' : 'נשמר כטיוטה')
       await reload()
     } catch {
@@ -155,7 +160,9 @@ function SubmissionEditor({ deliverable, sub, canWork }) {
   async function cancel() {
     setBusy(true)
     try {
-      await supabase.from('cgh_submissions').update({ status: 'draft' }).eq('id', sub.id).then(must)
+      await rpc('cgh_save_submission', {
+        p_key: identity.key, p_deliverable: deliverable.id, p_content: content, p_link: link.trim(), p_status: 'draft',
+      })
       setSaved('ההגשה בוטלה, אפשר לערוך')
       await reload()
     } catch { notify('ביטול ההגשה נכשל. נסו שוב.') } finally { setBusy(false) }
@@ -186,15 +193,15 @@ function SubmissionEditor({ deliverable, sub, canWork }) {
         {!canWork && <span className="muted">השלב עדיין לא פתוח להגשה.</span>}
         {canWork && (status === 'none' || status === 'draft' || status === 'returned') && (
           <>
-            <button className="btn line" disabled={busy} onClick={() => save('draft')} data-testid="save-draft">שמירת טיוטה</button>
-            <button className="btn solid" disabled={busy} onClick={() => save('submitted')} data-testid="submit">הגשה לבדיקה</button>
+            <button className="btn" disabled={busy} onClick={() => save('draft')} data-testid="save-draft">שמירת טיוטה</button>
+            <button className="btn ink" disabled={busy} onClick={() => save('submitted')} data-testid="submit">הגשה לבדיקה</button>
           </>
         )}
         {canWork && status === 'submitted' && (
-          <button className="btn line" disabled={busy} onClick={cancel} data-testid="cancel-submit">ביטול הגשה לעריכה</button>
+          <button className="btn" disabled={busy} onClick={cancel} data-testid="cancel-submit">ביטול הגשה לעריכה</button>
         )}
         {status === 'approved' && <span className="muted">התוצר אושר ונעול.</span>}
-        <AnimatePresence>{saved && <motion.span key={saved} className="saved mono" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{saved}</motion.span>}</AnimatePresence>
+        <AnimatePresence mode="wait">{saved && <motion.span key={saved} className="saved mono" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{saved}</motion.span>}</AnimatePresence>
       </div>
     </div>
   )
@@ -208,7 +215,7 @@ function StageEditor({ stage }) {
   const [weeks, setWeeks] = useState(stage.weeks)
   async function save() {
     try {
-      await supabase.from('cgh_stages').update({ title, goal, weeks }).eq('id', stage.id).then(must)
+      await rpc('cgh_save_stage', { p_id: stage.id, p_title: title, p_goal: goal, p_weeks: weeks })
       await reloadCourse(); notify('השלב נשמר.')
     } catch { notify('שמירת השלב נכשלה.') }
   }
@@ -217,7 +224,7 @@ function StageEditor({ stage }) {
       <input className="h1-input" value={title} onChange={(e) => setTitle(e.target.value)} aria-label="שם השלב" data-testid="stage-title-input" />
       <textarea rows={3} value={goal} onChange={(e) => setGoal(e.target.value)} aria-label="מטרת השלב" />
       <input value={weeks} onChange={(e) => setWeeks(e.target.value)} aria-label="שבועות" />
-      <button className="btn solid" onClick={save} data-testid="stage-save">שמירת השלב</button>
+      <button className="btn ink" onClick={save} data-testid="stage-save">שמירת השלב</button>
     </div>
   )
 }
@@ -229,7 +236,7 @@ function DeliverableEditor({ d, n }) {
   const [description, setDescription] = useState(d.description)
   async function save() {
     try {
-      await supabase.from('cgh_deliverables').update({ title, description }).eq('id', d.id).then(must)
+      await rpc('cgh_save_deliverable', { p_id: d.id, p_stage: d.stage_id, p_title: title, p_description: description, p_sort: d.sort_order })
       await reloadCourse(); notify('התוצר נשמר.')
     } catch { notify('שמירת התוצר נכשלה.') }
   }
@@ -238,7 +245,7 @@ function DeliverableEditor({ d, n }) {
       <span className="mono">{stageNumber(n)}</span>
       <input value={title} onChange={(e) => setTitle(e.target.value)} aria-label="שם התוצר" />
       <textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} aria-label="תיאור התוצר" />
-      <button className="btn line" onClick={save} data-testid={`deliv-save-${n}`}>שמירה</button>
+      <button className="btn" onClick={save} data-testid={`deliv-save-${n}`}>שמירה</button>
     </div>
   )
 }
@@ -250,7 +257,7 @@ function AddDeliverable({ stageId, order }) {
   async function add() {
     if (!title.trim()) return
     try {
-      await supabase.from('cgh_deliverables').insert({ stage_id: stageId, title: title.trim(), description: '', sort_order: order }).then(must)
+      await rpc('cgh_save_deliverable', { p_id: null, p_stage: stageId, p_title: title.trim(), p_description: '', p_sort: order })
       setTitle(''); await reloadCourse()
     } catch { notify('הוספת התוצר נכשלה.') }
   }
@@ -259,7 +266,7 @@ function AddDeliverable({ stageId, order }) {
       <div className="inline-edit deliv-edit">
         <span className="mono">חדש</span>
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="שם התוצר החדש" aria-label="שם התוצר החדש" data-testid="new-deliv" />
-        <button className="btn solid" onClick={add} data-testid="add-deliv">הוספת תוצר</button>
+        <button className="btn ink" onClick={add} data-testid="add-deliv">הוספת תוצר</button>
       </div>
     </li>
   )

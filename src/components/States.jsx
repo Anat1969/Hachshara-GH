@@ -18,7 +18,7 @@ export function ErrorState({ onRetry, text }) {
       <span className="eyebrow">שגיאה</span>
       <h2>משהו לא נטען</h2>
       <p>{text || 'לא הצלחנו להביא את המידע מהשרת. בדקו את החיבור ונסו שוב.'}</p>
-      <button className="btn solid" onClick={onRetry} data-testid="retry">נסה שוב</button>
+      <button className="btn ink" onClick={onRetry} data-testid="retry">נסה שוב</button>
     </motion.section>
   )
 }

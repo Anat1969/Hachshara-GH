@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import { AppProvider } from './store.jsx'
-import { NoticeProvider } from './components/SignIn.jsx'
+import { NoticeProvider } from './components/Notice.jsx'
 import './styles.css'
 
 createRoot(document.getElementById('root')).render(
