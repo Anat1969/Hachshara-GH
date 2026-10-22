@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useApp } from '../store.jsx'
-import { supabase, must } from '../supabase.js'
+import { rpc } from '../supabase.js'
 import { buildRows } from '../mentor.js'
-import { useNotice } from './SignIn.jsx'
+import { useNotice } from './Notice.jsx'
 
 // Shown only when every deliverable of the participant's current stage is approved.
 export default function AdvanceButton({ enrollmentId }) {
@@ -14,13 +14,13 @@ export default function AdvanceButton({ enrollmentId }) {
   async function advance() {
     setBusy(true)
     try {
-      await supabase.rpc('cgh_advance_stage', { p_enrollment: enrollmentId }).then(must)
+      await rpc('cgh_advance_stage', { p_enrollment: enrollmentId })
       await reload()
       notify(`${row.name} עבר לשלב ${row.e.current_stage + 1}.`)
     } catch { notify('המעבר לשלב הבא נכשל.') } finally { setBusy(false) }
   }
   return (
-    <button className="btn accent" disabled={busy} onClick={advance} data-testid={`advance-${enrollmentId}`}>
+    <button className="btn gold" disabled={busy} onClick={advance} data-testid={`advance-${enrollmentId}`}>
       מעבר לשלב {row.e.current_stage + 1}
     </button>
   )

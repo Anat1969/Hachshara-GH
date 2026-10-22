@@ -12,23 +12,22 @@ import MentorQueue from './pages/MentorQueue.jsx'
 import MentorGroup from './pages/MentorGroup.jsx'
 
 function Gate({ role, children }) {
-  const { session, status, error, reload, me, data } = useApp()
-  if (session === undefined) return <Loading />
-  if (!session) return <Landing />
+  const { identity, status, error, reload, data } = useApp()
+  if (!identity) return <Landing />
   if (status === 'error') return <ErrorState error={error} onRetry={reload} />
-  if (status !== 'ready' || !me) return <Loading />
-  if (role === 'mentor' && me.role !== 'mentor') {
-    return <NoAccess text="הדף הזה מיועד למנטורים. אם את או אתה מנטור, פנו למנהלת ההכשרה כדי לקבל הרשאה." />
+  if (status !== 'ready' || !data) return <Loading />
+  if (role === 'mentor' && identity.role !== 'mentor') {
+    return <NoAccess text="הדף הזה מיועד למנטורים. אפשר לעבור למצב מנטור דרך החלפת משתמש בתפריט שתחת הלוגו." />
   }
-  if (role === 'participant' && me.role === 'participant' && !data?.enrollment) {
-    return <NoAccess text="עדיין אין לך שיבוץ למחזור פעיל. פנו למנטור של הקבוצה כדי שיצרף אתכם." />
+  if (role === 'participant' && identity.role !== 'participant') {
+    return <NoAccess text="הדף הזה מיועד למשתתפים. במצב מנטור, הגשות המשתתפים מופיעות בתור הבדיקה." />
   }
   return children
 }
 
 function Home() {
-  const { session, me } = useApp()
-  if (session && me?.role === 'mentor') return <Gate><MentorHome /></Gate>
+  const { identity } = useApp()
+  if (identity?.role === 'mentor') return <Gate><MentorHome /></Gate>
   return <Gate role="participant"><ParticipantHome /></Gate>
 }
 

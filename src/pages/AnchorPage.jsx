@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useApp } from '../store.jsx'
-import { supabase, must } from '../supabase.js'
+import { rpc } from '../supabase.js'
 import { Badge } from '../components/States.jsx'
-import { useNotice } from '../components/SignIn.jsx'
+import { useNotice } from '../components/Notice.jsx'
 import { SECTOR_LABEL } from '../lib.js'
 
 export default function AnchorPage() {
-  const { data, reload } = useApp()
+  const { data, reload, identity } = useApp()
   const notify = useNotice()
   const a = data.anchor
   const [form, setForm] = useState(() => ({
@@ -31,14 +31,10 @@ export default function AnchorPage() {
     }
     setBusy(true)
     try {
-      await supabase.from('cgh_anchor_orgs').upsert({
-        enrollment_id: data.enrollment.id,
-        org_name: form.org_name.trim(),
-        sector: form.sector,
-        contact_name: form.contact_name.trim(),
-        pain_points: form.pains.map((p) => p.trim()),
-        status: nextStatus,
-      }, { onConflict: 'enrollment_id' }).then(must)
+      await rpc('cgh_save_anchor', {
+        p_key: identity.key, p_org: form.org_name.trim(), p_sector: form.sector, p_contact: form.contact_name.trim(),
+        p_pains: form.pains.map((p) => p.trim()), p_status: nextStatus,
+      })
       setSaved(nextStatus === 'submitted' ? 'הוגש למנטור' : 'נשמר כטיוטה')
       await reload()
     } catch { notify('השמירה נכשלה. נסו שוב.') } finally { setBusy(false) }
@@ -47,7 +43,9 @@ export default function AnchorPage() {
   async function cancel() {
     setBusy(true)
     try {
-      await supabase.from('cgh_anchor_orgs').update({ status: 'draft' }).eq('id', a.id).then(must)
+      await rpc('cgh_save_anchor', {
+        p_key: identity.key, p_org: a.org_name, p_sector: a.sector, p_contact: a.contact_name, p_pains: a.pain_points, p_status: 'draft',
+      })
       setSaved('ההגשה בוטלה, אפשר לערוך'); await reload()
     } catch { notify('ביטול ההגשה נכשל.') } finally { setBusy(false) }
   }
@@ -68,6 +66,7 @@ export default function AnchorPage() {
         <div className="mentor-note ok"><span className="eyebrow">אושר</span><p>הארגון אושר ויופיע בכל התוצרים הבאים.{a.mentor_note ? ` ${a.mentor_note}` : ''}</p></div>
       )}
 
+      <div className="anchor-grid">
       <motion.form className="card form" onSubmit={(e) => e.preventDefault()} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
         <label className="field">
           <span>שם הארגון</span>
@@ -97,14 +96,44 @@ export default function AnchorPage() {
         <div className="editor-actions">
           {(status === 'none' || status === 'draft' || status === 'returned') && (
             <>
-              <button type="button" className="btn line" disabled={busy} onClick={() => save('draft')} data-testid="anchor-draft">שמירת טיוטה</button>
-              <button type="button" className="btn solid" disabled={busy} onClick={() => save('submitted')} data-testid="anchor-submit">הגשה למנטור</button>
+              <button type="button" className="btn" disabled={busy} onClick={() => save('draft')} data-testid="anchor-draft">שמירת טיוטה</button>
+              <button type="button" className="btn ink" disabled={busy} onClick={() => save('submitted')} data-testid="anchor-submit">הגשה למנטור</button>
             </>
           )}
-          {status === 'submitted' && <button type="button" className="btn line" disabled={busy} onClick={cancel} data-testid="anchor-cancel">ביטול הגשה לעריכה</button>}
-          <AnimatePresence>{saved && <motion.span key={saved} className="saved mono" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{saved}</motion.span>}</AnimatePresence>
+          {status === 'submitted' && <button type="button" className="btn" disabled={busy} onClick={cancel} data-testid="anchor-cancel">ביטול הגשה לעריכה</button>}
+          <AnimatePresence mode="wait">{saved && <motion.span key={saved} className="saved mono" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>{saved}</motion.span>}</AnimatePresence>
         </div>
       </motion.form>
+      <AnchorPreview form={form} />
+      </div>
     </div>
+  )
+}
+
+// Live model of the organisation: name on top, three pains as blocks that grow with what is written.
+function AnchorPreview({ form }) {
+  const pains = form.pains.map((p) => p.trim())
+  const max = Math.max(40, ...pains.map((p) => p.length))
+  return (
+    <aside className="anchor-preview" aria-label="תצוגה חיה של הארגון">
+      <span className="eyebrow">תצוגה חיה</span>
+      <motion.div className="org-block" layout>
+        <span className="mono">{SECTOR_LABEL[form.sector]}</span>
+        <strong>{form.org_name.trim() || 'שם הארגון'}</strong>
+        {form.contact_name.trim() && <span className="muted">איש קשר: {form.contact_name.trim()}</span>}
+      </motion.div>
+      <div className="pains">
+        {pains.map((p, i) => (
+          <div className="pain" key={i}>
+            <span className="mono">{String(i + 1).padStart(2, '0')}</span>
+            <div className="pain-bar">
+              <motion.span className={p ? 'on' : ''} animate={{ width: `${Math.max(6, (p.length / max) * 100)}%` }} transition={{ type: 'spring', stiffness: 160, damping: 22 }} />
+            </div>
+            <p>{p || 'תהליך כואב'}</p>
+          </div>
+        ))}
+      </div>
+      <p className="muted small">שלושת התהליכים הם חומר הגלם לשלב הבא: בוחרים אחד וממפים אותו.</p>
+    </aside>
   )
 }

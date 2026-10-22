@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useApp } from '../store.jsx'
-import { supabase, must } from '../supabase.js'
+import { rpc } from '../supabase.js'
 import { buildQueue } from '../mentor.js'
 import { Loading, Empty } from '../components/States.jsx'
-import { useNotice } from '../components/SignIn.jsx'
+import { useNotice } from '../components/Notice.jsx'
 import { fmtDate, stageNumber, SECTOR_LABEL } from '../lib.js'
 import AdvanceButton from '../components/AdvanceButton.jsx'
 
@@ -67,7 +67,7 @@ export default function MentorQueue() {
 }
 
 function ReviewPanel({ item, onDone }) {
-  const { reload } = useApp()
+  const { reload, identity } = useApp()
   const notify = useNotice()
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
@@ -78,9 +78,9 @@ function ReviewPanel({ item, onDone }) {
     try {
       const fn = item.kind === 'anchor' ? 'cgh_review_anchor' : 'cgh_review_submission'
       const args = item.kind === 'anchor'
-        ? { p_anchor: item.id, p_decision: decision, p_note: note.trim() }
-        : { p_submission: item.id, p_decision: decision, p_note: note.trim() }
-      await supabase.rpc(fn, args).then(must)
+        ? { p_anchor: item.id, p_decision: decision, p_note: note.trim(), p_mentor: identity?.name || '' }
+        : { p_submission: item.id, p_decision: decision, p_note: note.trim(), p_mentor: identity?.name || '' }
+      await rpc(fn, args)
       await reload()
       onDone(decision)
     } catch { notify('שמירת ההחלטה נכשלה. נסו שוב.') } finally { setBusy(false) }
@@ -107,8 +107,8 @@ function ReviewPanel({ item, onDone }) {
         <textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="חובה בהחזרה לתיקון, רשות באישור." data-testid="review-note" />
       </label>
       <div className="editor-actions">
-        <button className="btn solid" disabled={busy} onClick={() => decide('approved')} data-testid="approve">אושר</button>
-        <button className="btn line" disabled={busy} onClick={() => decide('returned')} data-testid="return">לתיקון</button>
+        <button className="btn ink" disabled={busy} onClick={() => decide('approved')} data-testid="approve">אושר</button>
+        <button className="btn" disabled={busy} onClick={() => decide('returned')} data-testid="return">לתיקון</button>
       </div>
     </div>
   )

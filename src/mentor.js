@@ -11,7 +11,7 @@ export function buildRows(course, data) {
     const handedIn = subs.filter((s) => s.status !== 'draft').length + (anchor && anchor.status !== 'draft' ? 1 : 0)
     const ready = e.current_stage < 7 && stageComplete(e.current_stage, course.deliverables, subs, anchor)
     const p = byProfile[e.profile_id]
-    return { e, name: p?.display_name || p?.email || 'משתתף', email: p?.email, subs, anchor, pending, returned, handedIn, ready }
+    return { e, name: p?.display_name || 'משתתף', subs, anchor, pending, returned, handedIn, ready }
   })
 }
 
