@@ -16,7 +16,18 @@
 
 ## מצב
 
-שלב אפיון. הקוד עדיין לא נכתב.
+גרסה ראשונה בנויה: Vite + React + framer-motion, Supabase (טבלאות cgh_ בפרויקט cultura-GH), כניסה עם Google.
+
+- `npm run dev` לפיתוח, `npm run build` לבנייה.
+- `npm test` מריץ בדיקת Playwright מול `vite preview` עם מוקים לכל קריאות Supabase (צריך `npm run build` קודם).
+
+## החלטות מימוש
+
+- משתתף נכנס עם Google ומשובץ אוטומטית למחזור הפתוח (פונקציה cgh_bootstrap). מנטור מוגדר לפי כתובת בטבלת cgh_mentors.
+- נוסף סטטוס "submitted" לארגון העוגן, כדי שיופיע בתור הבדיקה.
+- לשלבים נוספו השדות weeks ו-due_week לחישוב תאריך יעד מתאריך תחילת המחזור.
+- שלבים ותוצרים קריאים גם בלי כניסה, כדי שדף הבית ימפה את המסלול.
+- החלטות מנטור ומעבר שלב נעשים רק דרך פונקציות SQL (cgh_review_submission, cgh_review_anchor, cgh_advance_stage) שבודקות הרשאה ושלמות שלב.
 
 ## פריסה
 
