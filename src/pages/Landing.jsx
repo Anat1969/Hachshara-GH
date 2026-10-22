@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useApp } from '../store.jsx'
 import StageMap from '../components/StageMap.jsx'
@@ -20,6 +21,10 @@ export default function Landing() {
             הכשרה לבניית פתרונות AI לארגוני תרבות ועירייה. בונים קומה אחרי קומה: מתחילים מהתהליך ולא מהכלי,
             עוברים שמונה שלבים עם מנטור, ומסיימים בפתרון שהארגון באמת משתמש בו.
           </motion.p>
+          <Link className="ex-link" to="/example" data-testid="to-example">
+            <span className="mono">דוגמה מקצה לקצה</span>
+            <span>מקרה אחד שעובר את כל שמונת השלבים, בסדר הנכון</span>
+          </Link>
           <Entry />
         </div>
         <div className="hero-viz">

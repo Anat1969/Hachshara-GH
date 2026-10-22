@@ -50,6 +50,10 @@ export default function StagePage() {
           <p className="notice-strip">השלב הזה ייפתח אחרי שהמנטור יאשר את השלבים הקודמים.</p>
         )}
         {enrollment && <StageTrack current={enrollment.current_stage} />}
+        <Link className="ex-link small-link" to={`/example?s=${stage.id}`} data-testid="stage-example">
+          <span className="mono">איך זה נראה בדוגמה</span>
+          <span>שלב {stage.id} במקרה של הספרייה, עם תוצרים לדוגמה</span>
+        </Link>
         {!identity && <p className="notice-strip">כדי להגיש תוצרים, נכנסים מדף הבית עם השם בלבד.</p>}
       </section>
 

@@ -262,6 +262,43 @@ try {
     await context.close()
   }
 
+  console.log('End-to-end example')
+  {
+    const { page, errors, context } = await newPage(browser)
+    await page.goto(BASE + '/')
+    await page.getByTestId('to-example').click()
+    await page.waitForURL('**/example**')
+    await page.locator('.ex-stage').nth(7).waitFor()
+    ok(await page.locator('.ex-stage').count() === 8, 'example has 8 stages')
+    ok(await page.locator('.seq').count() === 8, 'sequence of 8 questions')
+    await page.getByTestId('seq-5').click()
+    await page.waitForFunction(() => location.search.includes('s=5'))
+    await page.waitForTimeout(1000)
+    ok(await page.locator('#s-5.on').count() === 1, 'question jumps to its stage and marks it')
+    ok(await page.locator('.slab.cur').count() === 1, 'tower follows the active stage')
+    await page.locator('#s-3 [data-testid="opt-0"]').click()
+    await page.locator('#s-3 .opt-card strong', { hasText: 'שינוי תהליך' }).waitFor({ timeout: 4000 }).catch(() => {})
+    ok((await page.locator('#s-3 .opt-card strong').innerText()) === 'שינוי תהליך', 'options viz switches')
+    await page.locator('#s-0 [data-testid="copy-sample"]').first().click()
+    ok((await page.evaluate(() => navigator.clipboard.readText())).includes('ספריית הקהילה'), 'copy sample text')
+    await page.goto(BASE + '/example?s=6')
+    await page.waitForTimeout(1200)
+    ok(await page.locator('#s-6.on').count() === 1, 'link with ?s= opens at that stage')
+    const top6 = await page.locator('#s-6').evaluate((el) => el.getBoundingClientRect().top)
+    ok(top6 > 0 && top6 < 400, `link with ?s= scrolls to the stage (top ${Math.round(top6)})`)
+    await page.goto(BASE + '/stage/2')
+    await page.getByTestId('stage-example').click()
+    await page.waitForURL('**/example?s=2')
+    ok(true, 'stage page links to its place in the example')
+    await page.goto(BASE + '/example')
+    for (let y = 0; y < 9000; y += 500) { await page.mouse.wheel(0, 500); await page.waitForTimeout(120) }
+    await page.waitForTimeout(800)
+    await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(400)
+    await page.screenshot({ path: 'tests/shots/example.png', fullPage: true })
+    ok(errors.length === 0, `no console errors ${errors.join(' | ')}`)
+    await context.close()
+  }
+
   console.log('Error state')
   {
     const { page, context, setStagesFailing } = await newPage(browser, { failStages: true })
@@ -415,7 +452,7 @@ try {
   console.log('Mobile')
   for (const role of [null, 'participant', 'mentor']) {
     const { page, context } = await newPage(browser, { role, viewport: { width: 375, height: 800 } })
-    const paths = role === 'mentor' ? ['/', '/mentor', '/mentor/group', '/stage/1'] : role ? ['/', '/anchor', '/stage/0', '/stage/3'] : ['/', '/stage/3']
+    const paths = role === 'mentor' ? ['/', '/mentor', '/mentor/group', '/stage/1'] : role ? ['/', '/anchor', '/stage/0', '/stage/3'] : ['/', '/stage/3', '/example', '/example?s=5']
     for (const p of paths) {
       await page.goto(BASE + p)
       await page.waitForTimeout(900)
@@ -428,6 +465,7 @@ try {
     await page.locator('#owner-panel [data-testid="copy-link"]').click()
     await noHorizontalScroll(page, `${role || 'anon'} panel open`)
     await page.screenshot({ path: `tests/shots/mobile-${role || 'anon'}.png`, fullPage: true })
+    if (!role) { await page.goto(BASE + '/example?s=1'); await page.waitForTimeout(1200); await page.screenshot({ path: 'tests/shots/mobile-example.png' }) }
     await context.close()
   }
 } catch (e) {

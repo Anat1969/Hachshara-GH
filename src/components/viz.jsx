@@ -6,8 +6,9 @@ import { stageNumber, STATUS_LABEL } from '../lib.js'
 const EASE = [0.2, 0.7, 0.2, 1]
 
 /* ---------- The track as a building: eight floors stacked in isometric ---------- */
-export function Tower({ stages, current = null, compact = false }) {
+export function Tower({ stages, current = null, compact = false, onPick = null, caption = null }) {
   const navigate = useNavigate()
+  const pick = (id) => (onPick ? onPick(id) : navigate(`/stage/${id}`))
   const [hover, setHover] = useState(null)
   const W = 124, D = 22, T = 14, GAP = 46, CX = 170
   const H = stages.length * (T + GAP) + D * 2 + 30
@@ -37,8 +38,8 @@ export function Tower({ stages, current = null, compact = false }) {
               transition={{ delay: compact ? 0 : 0.15 + i * 0.09, type: 'spring', stiffness: 220, damping: 20 }}
               onMouseEnter={() => setHover(s.id)} onMouseLeave={() => setHover(null)}
               onFocus={() => setHover(s.id)} onBlur={() => setHover(null)}
-              onClick={() => navigate(`/stage/${s.id}`)}
-              onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/stage/${s.id}`) }}
+              onClick={() => pick(s.id)}
+              onKeyDown={(e) => { if (e.key === 'Enter') pick(s.id) }}
               data-testid={`floor-${s.id}`}
             >
               <path d={`M${CX - W} ${y} L${CX} ${y + D} L${CX} ${y + D + T} L${CX - W} ${y + T} Z`} fill={side1} />
@@ -63,7 +64,7 @@ export function Tower({ stages, current = null, compact = false }) {
             <strong>{stages.find((s) => s.id === hover)?.title}</strong>
           </>
         ) : (
-          <span className="mono muted">{current == null ? 'מעבר עכבר על קומה מציג את השלב. לחיצה פותחת אותו.' : 'הקומה המוזהבת היא השלב שלך.'}</span>
+          <span className="mono muted">{caption ?? (current == null ? 'מעבר עכבר על קומה מציג את השלב. לחיצה פותחת אותו.' : 'הקומה המוזהבת היא השלב שלך.')}</span>
         )}
       </figcaption>
     </figure>
