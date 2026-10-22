@@ -1,0 +1,17 @@
+{
+  "name": "הכשרה לבניית אפליקציות",
+  "short_name": "הכשרה",
+  "description": "מסלול הכשרה של 12 שבועות לבניית פתרון AI עבור ארגון תרבות או עירייה.",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ecebe8",
+  "theme_color": "#1b1d20",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
