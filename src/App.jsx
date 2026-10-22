@@ -10,6 +10,7 @@ import StagePage from './pages/StagePage.jsx'
 import AnchorPage from './pages/AnchorPage.jsx'
 import MentorQueue from './pages/MentorQueue.jsx'
 import MentorGroup from './pages/MentorGroup.jsx'
+import ExamplePage from './pages/ExamplePage.jsx'
 
 function Gate({ role, children }) {
   const { identity, status, error, reload, data } = useApp()
@@ -51,6 +52,7 @@ export default function App() {
           <Routes location={location}>
             <Route path="/" element={<Home />} />
             <Route path="/stage/:id" element={<StagePage />} />
+            <Route path="/example" element={<ExamplePage />} />
             <Route path="/anchor" element={<Gate role="participant"><AnchorPage /></Gate>} />
             <Route path="/mentor" element={<Gate role="mentor"><MentorQueue /></Gate>} />
             <Route path="/mentor/group" element={<Gate role="mentor"><MentorGroup /></Gate>} />
