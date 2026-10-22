@@ -57,9 +57,9 @@ export default function TopBar() {
   }
 
   const isMentor = identity?.role === 'mentor'
-  const links = !identity ? [['/', 'המסלול'], ['/example', 'דוגמה מקצה לקצה']] : isMentor
-    ? [['/', 'סקירה'], ['/mentor', 'תור בדיקה'], ['/mentor/group', 'הקבוצה'], ['/example', 'דוגמה']]
-    : [['/', 'המסלול שלי'], ['/anchor', 'ארגון עוגן'], ['/example', 'דוגמה']]
+  const links = !identity ? [['/', 'המסלול'], ['/example', 'דוגמאות מקצה לקצה']] : isMentor
+    ? [['/', 'סקירה'], ['/mentor', 'תור בדיקה'], ['/mentor/group', 'הקבוצה'], ['/example', 'דוגמאות']]
+    : [['/', 'המסלול שלי'], ['/anchor', 'ארגון עוגן'], ['/example', 'דוגמאות']]
 
   const navItems = links.map(([to, label], i) => (
     <NavLink key={to} to={to} end className={({ isActive }) => 'navlink' + (isActive ? ' on' : '')}>

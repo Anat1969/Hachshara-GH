@@ -69,7 +69,7 @@ export default function ExamplePage() {
   return (
     <div className="example">
       <section className="ex-hero">
-        <motion.span className="eyebrow" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>דוגמה מקצה לקצה · ארגון בדוי להמחשה</motion.span>
+        <motion.span className="eyebrow" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>שתי דוגמאות מקצה לקצה · ארגונים בדויים להמחשה · בחרו דוגמה</motion.span>
         <div className="ex-switch" role="tablist" aria-label="בחירת דוגמה">
           {Object.values(EXAMPLES).map((x, i) => (
             <button key={x.id} role="tab" aria-selected={x.id === exId} className={`ex-tab ${x.id === exId ? 'on' : ''}`} onClick={() => switchTo(x.id)} data-testid={`ex-${x.id}`}>

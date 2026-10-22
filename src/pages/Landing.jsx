@@ -21,10 +21,16 @@ export default function Landing() {
             הכשרה לבניית פתרונות AI לארגוני תרבות ועירייה. בונים קומה אחרי קומה: מתחילים מהתהליך ולא מהכלי,
             עוברים שמונה שלבים עם מנטור, ומסיימים בפתרון שהארגון באמת משתמש בו.
           </motion.p>
-          <Link className="ex-link" to="/example" data-testid="to-example">
-            <span className="mono">דוגמה מקצה לקצה</span>
-            <span>מקרה אחד שעובר את כל שמונת השלבים, בסדר הנכון</span>
-          </Link>
+          <div className="ex-links">
+            <Link className="ex-link" to="/example" data-testid="to-example">
+              <span className="mono">דוגמה 01 · ספרייה עירונית</span>
+              <span>הרשמה לחוגי קיץ. הפתרון: אוטומציה</span>
+            </Link>
+            <Link className="ex-link" to="/example?e=binui" data-testid="to-example-binui">
+              <span className="mono">דוגמה 02 · אדריכלית העיר</span>
+              <span>בדיקת תוכנית בינוי. הפתרון: טבלה אחידה ו-AI</span>
+            </Link>
+          </div>
           <Entry />
         </div>
         <div className="hero-viz">
