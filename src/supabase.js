@@ -9,6 +9,8 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 })
 
 export const DEV_CHAT_URL = 'https://claude.ai/code/session_01XKjdfQUbKMrdERMAdgLonp'
+// Claude project used for the research behind the app. The button appears once the link is set.
+export const RESEARCH_URL = import.meta.env.VITE_RESEARCH_URL || ''
 
 export function must({ data, error }) {
   if (error) throw error
