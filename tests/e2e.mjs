@@ -3,7 +3,8 @@ import { chromium } from 'playwright'
 import { spawn } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
 
-const BASE = 'http://localhost:4173'
+const PORT = process.env.PORT || '4173'
+const BASE = `http://localhost:${PORT}`
 const SUPA = 'https://ktqmwpbzcnzkhjskqisy.supabase.co'
 const REF = 'ktqmwpbzcnzkhjskqisy'
 mkdirSync('tests/shots', { recursive: true })
@@ -170,6 +171,8 @@ async function mockSupabase(context, { failStages = false } = {}) {
 async function newPage(browser, { role, viewport = { width: 1360, height: 900 }, ...opts } = {}) {
   const context = await browser.newContext({ viewport, locale: 'he-IL', permissions: ['clipboard-read', 'clipboard-write'] })
   const mock = await mockSupabase(context, opts)
+  // AI_MENU_JS: a local copy of the shared A&I menu, for runs where appofapp-gh.vercel.app is unreachable.
+  if (process.env.AI_MENU_JS) await context.route('https://appofapp-gh.vercel.app/ai-menu.js', (r) => r.fulfill({ path: process.env.AI_MENU_JS, contentType: 'application/javascript' }))
   if (role) {
     const id = role === 'mentor' ? { role: 'mentor', name: 'ענת' } : { role: 'participant', key: 'key-noa', enrollmentId: 'e1', name: 'נועה' }
     await context.addInitScript((v) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('cgh_identity', v); sessionStorage.setItem('seeded', '1') } }, JSON.stringify(id))
@@ -187,11 +190,12 @@ async function noHorizontalScroll(page, label) {
 }
 
 const last = (log, method, path) => [...log].reverse().find((l) => l.method === method && l.path.includes(path))
-const openMenu = async (page) => { if (!(await page.locator('#owner-panel').isVisible())) await page.getByTestId('menu').click(); await page.locator('#owner-panel').waitFor() }
+const menuItem = (page, name) => page.locator('ai-menu').getByRole('menuitem', { name })
+const openMenu = async (page) => { if (!(await page.locator('ai-menu .panel').isVisible())) await page.locator('ai-menu .logo').click(); await page.locator('ai-menu .panel').waitFor() }
 const dismiss = async (page) => { await page.getByTestId('notice').waitFor(); await page.getByRole('button', { name: 'הבנתי' }).click() }
 
 // ---------- run ----------
-const server = spawn('npx', ['vite', 'preview', '--port', '4173', '--strictPort'], { stdio: 'ignore' })
+const server = spawn('npx', ['vite', 'preview', '--port', PORT, '--strictPort'], { stdio: 'ignore' })
 await new Promise((r) => setTimeout(r, 2500))
 const browser = await chromium.launch()
 
@@ -210,14 +214,14 @@ try {
     await page.waitForTimeout(1500)
     await page.screenshot({ path: 'tests/shots/landing.png', fullPage: true })
     // Owner panel under Anat's logo
-    ok(await page.locator('.topbar-inner [data-testid="copy-link"], .topbar-inner [data-testid="dev-chat"]').count() === 0, 'no utility buttons in the main bar')
-    ok(await page.locator('.topbar-inner .anat-mark[aria-label="A & I, אד׳ ענת שטיבלמן"]').count() === 1, "Anat's mark sits in the main bar")
+    ok(!(await page.locator('header >> text=העתקת קישור').first().isVisible().catch(() => false)), 'no utility buttons in the main bar')
+    ok(await page.locator('.topbar-inner ai-menu .logo').isVisible(), 'A&I logo button in the top bar')
     const markBox = await page.locator('.owner').boundingBox()
     ok(markBox.x < 400, `mark on the left side of the bar (x ${Math.round(markBox.x)})`)
     await openMenu(page)
-    await page.getByTestId('copy-link').click()
+    await menuItem(page, 'העתקת קישור').click()
     ok((await page.evaluate(() => navigator.clipboard.readText())) === BASE + '/', 'copy link copies current URL')
-    ok(await page.getByTestId('dev-chat').getAttribute('href') === 'https://claude.ai/code/session_01XKjdfQUbKMrdERMAdgLonp', 'dev chat link under the logo')
+    ok(await menuItem(page, 'שיחת הפיתוח').getAttribute('href') === 'https://claude.ai/code/session_01XKjdfQUbKMrdERMAdgLonp', 'dev chat link under the logo')
     await page.keyboard.press('Escape')
     // Tower floor -> stage
     await page.getByTestId('floor-3').click()
@@ -233,7 +237,7 @@ try {
     await page.getByTestId('deliv-1').click()
     ok(page.url().includes('?d=d1'), 'opening deliverable updates URL')
     await openMenu(page)
-    await page.getByTestId('copy-link').click()
+    await menuItem(page, 'העתקת קישור').click()
     ok((await page.evaluate(() => navigator.clipboard.readText())).includes('/stage/1?d=d1'), 'copy link keeps state')
     // Join by name
     await page.goto(BASE + '/')
@@ -245,11 +249,12 @@ try {
     ok(last(log, 'POST', 'rpc/cgh_join')?.body.p_name === 'דנה לוי', 'join sends the name')
     ok(await page.getByText('שלום, דנה לוי').isVisible(), 'greets the new participant')
     await openMenu(page)
-    await page.getByTestId('copy-personal').click()
+    await menuItem(page, 'הקישור האישי שלי').click()
     const personal = await page.evaluate(() => navigator.clipboard.readText())
     ok(personal.includes('/?k=key-p'), 'personal link holds the key')
     // Restore from personal link in a fresh context
-    await page.getByTestId('sign-out').click()
+    await openMenu(page)
+    await menuItem(page, 'החלפת משתמש').click()
     await page.getByTestId('join').waitFor()
     ok(true, 'switch user returns to entry')
     await page.goto(personal)
@@ -455,7 +460,8 @@ try {
     await page.screenshot({ path: 'tests/shots/mentor-group.png', fullPage: true })
 
     await page.goto(BASE + '/stage/1')
-    await page.getByTestId('edit-toggle').click()
+    await openMenu(page)
+    await menuItem(page, /עריכת השלב|סיום עריכה/).click()
     await page.getByTestId('stage-title-input').fill('מיפוי התהליך בשטח')
     await page.getByTestId('stage-save').click()
     await dismiss(page)
@@ -467,7 +473,8 @@ try {
     await page.getByTestId('add-deliv').click()
     await page.waitForFunction(() => document.querySelectorAll('.deliv-edit').length >= 4)
     ok(last(log, 'POST', 'rpc/cgh_save_deliverable')?.body.p_id === null, 'add deliverable sends rpc')
-    await page.getByTestId('edit-toggle').click()
+    await openMenu(page)
+    await menuItem(page, /עריכת השלב|סיום עריכה/).click()
     ok(await page.locator('h1').innerText() === 'מיפוי התהליך בשטח', 'edited title shown')
     ok(errors.length === 0, `no console errors ${errors.join(' | ')}`)
     await context.close()
@@ -485,8 +492,8 @@ try {
     await page.goto(BASE + '/')
     await page.waitForTimeout(900)
     await openMenu(page)
-    ok(await page.locator('.panel-nav .navlink').count() >= 1, `${role || 'anon'} nav links inside the logo panel on mobile`)
-    await page.locator('#owner-panel [data-testid="copy-link"]').click()
+    ok(await page.locator('.navlinks .navlink').first().isVisible(), `${role || 'anon'} nav links visible in the bar on mobile`)
+    ok(await page.locator('ai-menu .logo').isVisible(), `${role || 'anon'} A&I logo visible on mobile`)
     await noHorizontalScroll(page, `${role || 'anon'} panel open`)
     await page.screenshot({ path: `tests/shots/mobile-${role || 'anon'}.png`, fullPage: true })
     if (!role) { await page.goto(BASE + '/example?s=1'); await page.waitForTimeout(1200); await page.screenshot({ path: 'tests/shots/mobile-example.png' }) }
