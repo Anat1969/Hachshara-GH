@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useApp } from '../store.jsx'
@@ -6,6 +6,7 @@ import { rpc } from '../supabase.js'
 import { Badge, Loading, ErrorState, Empty } from '../components/States.jsx'
 import { useNotice } from '../components/Notice.jsx'
 import { Pyramid, StageTrack } from '../components/viz.jsx'
+import { useMenuItems } from '../components/AIMenu.jsx'
 import { dueDate, fmtDate, stageNumber } from '../lib.js'
 
 export default function StagePage() {
@@ -15,6 +16,11 @@ export default function StagePage() {
   const openId = params.get('d')
   const { course, courseError, reloadCourse, identity, data, status } = useApp()
   const [editing, setEditing] = useState(false)
+  const canEdit = identity?.role === 'mentor' && !!course?.stages.some((s) => s.id === stageId)
+  const menuItems = useMemo(() => canEdit
+    ? [{ label: editing ? 'סיום עריכה' : 'עריכת השלב', hint: editing ? 'פעיל' : 'כבוי', pressed: editing, onSelect: () => setEditing((e) => !e) }]
+    : null, [canEdit, editing])
+  useMenuItems('stage-edit', menuItems)
 
   if (courseError) return <ErrorState onRetry={reloadCourse} />
   if (!course || (identity && status !== 'ready')) return <Loading />
@@ -119,14 +125,6 @@ export default function StagePage() {
         {next ? <Link className="btn" to={`/stage/${next.id}`} data-testid="next-stage">לשלב הבא: {next.title}</Link> : <span />}
       </nav>
 
-      {isMentor && (
-        <motion.div className="editbar" initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-          <span className="mono">עריכת תוכן</span>
-          <button className={`btn ${editing ? 'gold' : 'ink'}`} onClick={() => setEditing((e) => !e)} data-testid="edit-toggle">
-            {editing ? 'סיום עריכה' : 'עריכת השלב'}
-          </button>
-        </motion.div>
-      )}
     </div>
   )
 }
