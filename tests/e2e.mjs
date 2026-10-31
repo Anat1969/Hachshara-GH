@@ -197,7 +197,7 @@ const dismiss = async (page) => { await page.getByTestId('notice').waitFor(); aw
 // ---------- run ----------
 const server = spawn('npx', ['vite', 'preview', '--port', PORT, '--strictPort'], { stdio: 'ignore' })
 await new Promise((r) => setTimeout(r, 2500))
-const browser = await chromium.launch()
+const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })
 
 try {
   console.log('Visitor and free entry')
