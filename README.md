@@ -13,6 +13,7 @@
 | docs/03-data-model.md | המידע שנשמר והקשרים ביניו |
 | docs/04-mvp-scope.md | מה נכנס למוצר המינימלי ומה לא |
 | docs/05-claude-code-prompt.md | פרומפט הביצוע ל-Claude Code |
+| docs/06-reel-extraction-methodology.md | שיטת חילוץ רעיונות מ-Reels להשראה בתוכן |
 
 ## מצב
 
